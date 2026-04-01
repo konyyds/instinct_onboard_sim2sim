@@ -1,80 +1,95 @@
-# Instinct Onboard
+# Fork 完整流程 + 日常开发标准流程
 
-This is the onboard code for Project Instinct. Dsgiend for supporting the inference of the network on different robot manufacturing platforms.
+# 一、Fork 后第一次开发流程
+```
+1. 去 GitHub 点 Fork 
+   把原作者项目复制到你自己账号
+2. git clone 你自己的仓库
+   下载代码到本地
+3. git remote add upstream 原作者地址
+   配置同步源（以后能更新官方代码）
+4. git checkout -b dev 
+   创建自己的开发分支（永远不在 main 改代码）
+5. 在 dev 分支修改代码
+6. git add .
+   选中所有修改
+7. git status  
+   查看要提交哪些文件
+8. git commit -m "提交说明"
+   本地提交
+9. git push origin dev
+   推送到你自己 GitHub 的 dev 分支
+```
 
-***NOTE*** Current projects are only tested on Ubuntu 22.04 and ROS2 Humble with Unitree G1's Jetson Orin NX, 29Dof version.
+# 二、日常开发流程
 
-## Prerequisites
-- Ubuntu
-- ROS2
-- Python
+## 日常开发（改代码 + 提交）
+```
+1. 确保在 dev 分支
+   git checkout dev
 
-### Installation (Unitree G1 Jetson Orin NX)
+2. 修改代码
 
-- JetPack
-    ```bash
-    sudo apt-get update
-    sudo apt install nvidia-jetpack
-    ```
+3. 提交
+   git add .
+   git commit -m "我改了xxx"
 
-- Install crc module
+4. 推送到自己 GitHub
+   git push origin dev
+```
 
-    Follow the instruction of [crc_module](https://github.com/ZiwenZhuang/g1_crc) and copy the product (`crc_module.so`) to where you launch the python script.
+# 三、你以后同步原作者最新代码（官方更新了）
+原项目更新了，你想同步到自己项目：
 
-- Install `unitree_hg` and `unitree_go` message definitions
+```
+1. 切回 main
+   git checkout main
 
+2. 拉取原作者最新代码
+   git pull upstream main
 
-### Installation (Common)
+3. 推送到你自己的 main
+   git push origin main
 
-- Make sure mcap storage for ros2 installed
-    ```bash
-    sudo apt install ros-{ROS_VERSION}-rosbag2-storage-mcap
-    ```
+4. 切回 dev 并合并更新
+   git checkout dev
+   git merge main
+```
+# 四、最重要的 3 条铁律（永远记住，永不踩坑）
+1. **main 分支永远不动**，只用来同步原作者
+2. **所有开发都在 dev 分支**
+3. **git push origin dev** 只会推到你自己仓库，绝对不会影响原作者
 
-- python virtual environment
-    ```bash
-    sudo apt-get install python3-venv
-    python3 -m venv instinct_venv
-    source instinct_venv/bin/activate
-    ```
+---
+# 流程图
 
-- Install onboard python packages with automatic GPU detection (But with no OpenCV libraries)
-    ```bash
-    pip install -e .
-    ```
-    This will automatically detect if GPU/CUDA is available and install the appropriate ONNX Runtime version.
-
-    - Installation options:
-        ```bash
-        # Default installation (includes all dependencies including OpenCV libraries)
-        pip install -e .[all]
-
-        # No OpenCV dependencies installation
-        pip install -e .[noopencv]
-        ```
-
-- Make sure `cv2` is accessible in the python environment. You can test it by running `import cv2` in the python shell.
-
-    - `pip install opencv-python` or follow the instruction on [Geek for Geeks](https://www.geeksforgeeks.org/python/getting-started-with-opencv-cuda-module/) to build your own OpenCV with CUDA support.
-
-- Notes:
-    - ONNX Runtime version is auto-detected (GPU if available, CPU otherwise)
-    - Use environment variables to override detection: `FORCE_CPU=1 pip install -e .` or `FORCE_GPU=1 pip install -e .`
-    - If you want to build your GPU version OpenCV from source, you can install `instinct_onboard` with `[noopencv]` option.
-
-
-## Code Structure Introduction
-
-### ROS nodes
-
-- In `instinct_onboard/ros_nodes/`, you can find the ROS nodes that are used to communicate with the robot.
-
-- To avoid diamond inheritance, each function-specific ROS node should be implemented in a dedicated file with Mixin class.
-
-- Please inherit everything you need in the script as well as the state machine logic in your main-entry script. (in `scripts/`)
-
-### Agents
-
-- In `instinct_onboard/agents/`, you can find the agents that are used to run the network (as well as collect the observations).
-
-- Do NOT scale the action of the network output. The action scaling happens in the ros node side.
+flowchart TD
+    %% 顶部：GitHub网页操作
+    A[GitHub官网<br>点Fork原项目] --> B[得到你自己的仓库<br>konyyds/xxx]
+    
+    %% 本地初始化
+    B --> C[本地克隆自己仓库<br>git clone 你的仓库地址]
+    C --> D[添加上游源<br>git remote add upstream 原作者地址]
+    
+    %% 建开发分支
+    D --> E[建专属开发分支<br>git checkout -b dev]
+    
+    %% 日常开发循环
+    E --> F[在dev改代码/调试]
+    F --> G[暂存所有修改<br>git add .]
+    G --> H[查看将要提交文件<br>git status]
+    H --> I[本地提交<br>git commit -m 备注]
+    I --> J[推自己云端dev分支<br>git push origin dev]
+    J --> F
+    
+    %% 同步原作者更新（单独分支走）
+    K[要同步官方最新代码] --> L[切干净主分支<br>git checkout main]
+    L --> M[拉原作者更新<br>git pull upstream main]
+    M --> N[更新自己main<br>git push origin main]
+    N --> O[切回dev合并更新<br>git checkout dev & git merge main]
+    O --> F
+    
+    %% 红线铁律标注
+    style E fill:#e6f7ff
+    style L fill:#fff2e8
+    style J fill:#f0f8ff
