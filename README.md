@@ -8,6 +8,8 @@
    下载代码到本地
 3. git remote add upstream 原作者地址
    配置同步源（以后能更新官方代码）
+5. git remote -v 
+   查看当前远程
 4. git checkout -b dev 
    创建自己的开发分支（永远不在 main 改代码）
 5. 在 dev 分支修改代码
