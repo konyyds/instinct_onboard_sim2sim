@@ -157,16 +157,15 @@ class G1ParkourNode(UnitreeRsCameraNode):
 
         elif self.current_agent_name == "cold_start":
             action, done = self.available_agents[self.current_agent_name].step()
-            if done:
-                if "stand" in self.available_agents.keys():
-                    self.get_logger().info(
-                        "ColdStartAgent done, press 'R1' to switch to stand agent.", throttle_duration_sec=10.0
-                    )
-                else:
-                    self.get_logger().info(
-                        "ColdStartAgent done, press any direction button to switch to parkour agent.",
-                        throttle_duration_sec=10.0,
-                    )
+            if done and ("stand" in self.available_agents.keys()):
+                self.get_logger().info(
+                    "ColdStartAgent done, press 'R1' to switch to stand agent.", throttle_duration_sec=10.0
+                )
+            else:
+                self.get_logger().info(
+                    "ColdStartAgent done, press any direction button to switch to parkour agent.",
+                    throttle_duration_sec=10.0,
+                )
             self.send_action(
                 action,
                 self.available_agents[self.current_agent_name].action_offset,
@@ -181,6 +180,10 @@ class G1ParkourNode(UnitreeRsCameraNode):
 
         elif self.current_agent_name == "stand":
             action, done = self.available_agents[self.current_agent_name].step()
+            if done and ("parkour" in self.available_agents.keys()):
+                self.get_logger().info(
+                    "StandAgent done, press 'L1' to switch to parkour agent.", throttle_duration_sec=10.0
+                )
             self.refresh_rs_data()
             self.send_action(
                 action,
@@ -229,7 +232,11 @@ def main(args):
     node = G1ParkourNode(
         rs_resolution=(480, 270),  # (width, height)
         rs_fps=60,
-        camera_individual_process=True,
+        depth_source="dds",
+        dds_depth_topic="rt/raw_depth_image",
+        dds_domain_id=0,
+        dds_interface="lo",
+        camera_individual_process=False, # set False if depth source is dds
         joint_pos_protect_ratio=2.0,
         robot_class_name="G1_29Dof_TorsoBase",
         dryrun=not args.nodryrun,

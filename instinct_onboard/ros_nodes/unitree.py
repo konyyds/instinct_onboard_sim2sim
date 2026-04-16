@@ -50,9 +50,12 @@ class UnitreeNode(RealNode):
         self.low_state_subscriber = self.create_subscription(
             LowState, self.low_state_topic, self._low_state_callback, 10
         )
-        self.torso_imu_subscriber = self.create_subscription(
-            IMUState, self.imu_state_topic, self._torso_imu_state_callback, 10
-        )
+
+        if self.imu_state_topic is not None:
+            self.torso_imu_subscriber = self.create_subscription(
+                IMUState, self.imu_state_topic, self._torso_imu_state_callback, 10
+            )
+
         self.joy_stick_subscriber = self.create_subscription(
             WirelessController, self.joy_stick_topic, self._joy_stick_callback, 10
         )

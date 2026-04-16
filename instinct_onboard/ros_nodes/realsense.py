@@ -13,6 +13,7 @@ import pyrealsense2 as rs
 from instinct_onboard.utils import _depth_to_ros_pointcloud_msg
 
 from .unitree import UnitreeNode
+from .sim_depth import DDSDepthCamera
 
 REALSENSE_PROCESS_FREQUENCY_CHECK_INTERVAL = 500
 
@@ -125,6 +126,10 @@ class RsCameraNodeMixin:
         camera_dead_behavior: Literal["restart", "raise_error", "none"] = "restart",
         main_process_affinity: set[int] | None = None,
         camera_process_affinity: set[int] | None = None,
+        depth_source: str = "realsense",
+        dds_depth_topic: str = "rt/raw_depth_image",
+        dds_domain_id: int = 0,
+        dds_interface: str | None = None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -136,6 +141,10 @@ class RsCameraNodeMixin:
         self.camera_dead_behavior = camera_dead_behavior
         self.main_process_affinity = main_process_affinity
         self.camera_process_affinity = camera_process_affinity
+        self.depth_source = depth_source
+        self.dds_depth_topic = dds_depth_topic
+        self.dds_domain_id = dds_domain_id
+        self.dds_interface = dds_interface
         self.camera = None
         self.camera_process = None
         self.request_queue = None
@@ -144,7 +153,15 @@ class RsCameraNodeMixin:
 
     def initialize_camera(self):
         """Initialize the RealSense camera with the specified configuration."""
-        if self.camera_individual_process:
+        if self.depth_source == "dds":
+            self.rs_depth_data = np.zeros(self.rs_resolution[::-1], dtype=np.float32)
+            self.camera = DDSDepthCamera(
+                resolution=self.rs_resolution,
+                topic=self.dds_depth_topic,
+                domain_id=self.dds_domain_id,
+                interface=self.dds_interface,
+            )
+        elif self.camera_individual_process:
             # self.rs_rgb_data = None # Todo: add rgb data support
             self.rs_depth_data = np.zeros(self.rs_resolution[::-1], dtype=np.float32)
             shm_size = (
@@ -225,7 +242,12 @@ class RsCameraNodeMixin:
     def refresh_rs_data(self) -> bool:
         """Currently refresh the depth data only."""
         refreshed = False
-        if self.camera_individual_process:
+        if self.depth_source == "dds":
+            camera_data = self.camera.get_camera_data()
+            if camera_data is not None:
+                self.rs_depth_data[:] = camera_data
+                refreshed =True
+        elif self.camera_individual_process:
             if self.camera_process is None or not self.camera_process.is_alive():
                 self.handle_camera_dead_behavior()
             # Dump queue and get latest
